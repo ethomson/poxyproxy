@@ -27,6 +27,9 @@ public interface Constants
     public static final String CONNECTION_CLOSE = "Close";
 
     public static final String PROXY_CONNECTION_HEADER = "Proxy-Connection";
+    
+    public static final String PROXY_AUTHORIZATION_HEADER = "Proxy-Authorization";
+    public static final String PROXY_AUTHENTICATE_HEADER = "Proxy-Authenticate";
 
     public static final String CONTENT_LENGTH_HEADER = "Content-Length";
 

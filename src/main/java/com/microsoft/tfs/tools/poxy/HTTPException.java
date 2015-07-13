@@ -13,7 +13,9 @@ package com.microsoft.tfs.tools.poxy;
 public class HTTPException
     extends RuntimeException
 {
-    public HTTPException()
+	private static final long serialVersionUID = -9187178406815885682L;
+
+	public HTTPException()
     {
         super();
     }

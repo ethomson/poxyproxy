@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
@@ -169,6 +170,12 @@ public class Connection
 
                 // Upgrade the response to use the version the client gave us
                 response.setVersion(request.getVersion());
+                
+                if (options.isAuthenticationRequired() &&
+                	!handleAuthentication(request, response))
+                {
+                	break;
+               	}
 
                 final RequestHandler handler;
                 if (request.getMethod().equals(Constants.CONNECT_METHOD))
@@ -264,6 +271,35 @@ public class Connection
             IOUtils.close(clientToProxySocket);
             Thread.currentThread().setName(oldName);
         }
+    }
+    
+    private boolean handleAuthentication(Request request, Response response)
+    	throws IOException
+    {
+        final Header authentication = findHeader(Constants.PROXY_AUTHORIZATION_HEADER, request.getHeaders());
+
+        if (authentication != null &&
+        	authentication.getValue().startsWith("Basic "))
+        {
+        	String value = new String(
+        		Base64Utils.decode(authentication.getValue().substring(6)),
+        		Charset.forName("UTF-8"));
+        	String[] credentials = value.split(":", 2);
+        	
+        	if (options.credentialsMatchProxyCredentials(credentials[0], credentials[1]))
+        	{
+            	return true;        		
+        	}        	
+        }
+
+        response.writeStatus(Status.PROXY_AUTHENTICATION_REQUIRED, "Proxy Authentication Required");
+        response.writeHeader(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "Basic realm=\"Proxy\""));
+        response.writeHeader(new Header(Constants.CONNECTION_HEADER, Constants.CONNECTION_CLOSE));
+        response.writeHeader(new Header(Constants.CONTENT_TYPE_HEADER, Constants.CONTENT_TYPE_TEXT_HTML));
+        response.endHeaders();
+        response.writeLine("<html><head><title>Proxy Authentication Required</title></head><body><p>Proxy Authentication Required</p></body></html>");
+        response.flush();
+        return false;
     }
 
     private void initializeClientToProxySocket()

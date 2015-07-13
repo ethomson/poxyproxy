@@ -16,7 +16,8 @@ public class Status
 {
     public static final int OK = 200;
 
-    public static final int BAD_REQUEST = 400;
+    public static final int BAD_REQUEST = 400;    
+    public static final int PROXY_AUTHENTICATION_REQUIRED = 407;
 
     public static final int INTERNAL_SERVER_ERROR = 500;
     public static final int BAD_GATEWAY = 502;
@@ -28,6 +29,7 @@ public class Status
         NAMES.put(OK, "OK");
 
         NAMES.put(BAD_REQUEST, "Bad Request");
+        NAMES.put(PROXY_AUTHENTICATION_REQUIRED, "Proxy Authentication Required");
 
         NAMES.put(INTERNAL_SERVER_ERROR, "Internal Server Error");
         NAMES.put(BAD_GATEWAY, "Bad Gateway");

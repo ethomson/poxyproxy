@@ -9,8 +9,10 @@ package com.microsoft.tfs.tools.poxy;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Options
@@ -67,6 +69,22 @@ public class Options
      * Synchronized on {@link #forwardProxyBypassHosts}.
      */
     private final Set<String> forwardProxyBypassHosts = new HashSet<String>();
+
+    /**
+     * If set to true, proxy authentication will be required.  Clients must
+     * present credentials in the {@link authenticationCredentials}.
+     */
+    private volatile boolean authenticationRequired = false;
+    
+    /**
+     * Only used when {@link #authenticationRequired} is true.
+     * 
+     * Map of username/password pairs that are permitted when proxy
+     * authentication is enabled.
+     * 
+     * Synchronized on {@link #proxyCredentials}.
+     */
+    private final Map<String, String> proxyCredentials = new HashMap<String, String>();
 
     /**
      * The maximum HTTP header size for requests/responses.
@@ -261,6 +279,44 @@ public class Options
         {
             return new HashSet<String>(forwardProxyBypassHosts);
         }
+    }
+    
+    public boolean isAuthenticationRequired()
+    {
+    	return authenticationRequired;
+    }
+    
+    public void setAuthenticationRequired(boolean required)
+    {
+    	this.authenticationRequired = required;
+    }
+    
+    public void setProxyCredentials(List<String> credentials)
+    {
+    	synchronized (proxyCredentials)
+    	{
+    		for (String credential : credentials)
+    		{
+    			String[] parts = credential.split(":",  2);
+    			proxyCredentials.put(parts[0], parts[1]);
+    		}
+    	}
+    }
+    
+    public void addProxyCredential(String username, String password)
+    {
+    	synchronized (proxyCredentials)
+    	{
+    		proxyCredentials.put(username, password);
+    	}
+    }
+
+    public boolean credentialsMatchProxyCredentials(String username, String password)
+    {
+    	synchronized (proxyCredentials)
+    	{
+    		return password.equals(proxyCredentials.get(username));
+    	}
     }
 
     public int getMaxHeaderSizeBytes()

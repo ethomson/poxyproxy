@@ -45,6 +45,7 @@ public class Poxy
         System.err.println("         [--connect-timeout secs] [--socket-read-timeout secs]");
         System.err.println("         [--forward-proxy url] [--forward-proxy-bypass host1,]...");
         System.err.println("         [--default-domain domain] [--add-response-delay ms]");
+        System.err.println("         [--credentials username:password,]...");
     }
 
     public void run()
@@ -59,6 +60,7 @@ public class Poxy
 
         try
         {
+            @SuppressWarnings("resource")
             final ServerSocket serverSocket = new ServerSocket(options.getLocalPort(), 4096);
 
             while (true)
@@ -105,6 +107,9 @@ public class Poxy
                 new Option("forward-proxy", true),
                 new Option("forward-proxy-bypass", true, true),
                 new Option("default-domain", true),
+                
+                /* Authentication */
+                new Option("credentials", true, true),
 
                 /* Debugging aids */
                 new Option("add-response-delay", true, "0"),
@@ -174,8 +179,6 @@ public class Poxy
             return null;
         }
 
-        logger.info("Starting server on port " + Integer.toString(proxyOptions.getLocalPort()));
-
         // Forwarding options
         if (getOptions.getArgument("forward-proxy") != null)
         {
@@ -183,6 +186,14 @@ public class Poxy
             proxyOptions.setForwardProxyBypassHosts(getOptions.getArguments("forward-proxy-bypass"));
             proxyOptions.setForwardProxyBypassHostDefaultDomain(getOptions.getArgument("default-domain"));
         }
+        
+        if (getOptions.getArgument("credentials") != null)
+        {
+            proxyOptions.setAuthenticationRequired(true);
+            proxyOptions.setProxyCredentials(getOptions.getArguments("credentials"));
+        }
+
+        logger.info("Starting server on port " + Integer.toString(proxyOptions.getLocalPort()));
 
         return proxyOptions;
     }
