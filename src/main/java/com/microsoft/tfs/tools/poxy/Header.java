@@ -6,7 +6,7 @@
 
 package com.microsoft.tfs.tools.poxy;
 
-import org.apache.log4j.Logger;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 public class Header
 {

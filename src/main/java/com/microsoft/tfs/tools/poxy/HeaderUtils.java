@@ -8,6 +8,8 @@ package com.microsoft.tfs.tools.poxy;
 
 import java.util.List;
 
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+
 public abstract class HeaderUtils
 {
     /*
@@ -83,7 +85,7 @@ public abstract class HeaderUtils
                 }
                 catch (NumberFormatException e)
                 {
-                    Header.logger.warn("Couldn't parse content length header: " + h);
+                    Header.logger.write(LogLevel.WARNING, "Couldn't parse content length header: " + h);
                 }
             }
         }

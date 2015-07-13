@@ -21,8 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.log4j.Logger;
-
 import com.microsoft.tfs.tools.poxy.Connection;
 import com.microsoft.tfs.tools.poxy.HTTPException;
 import com.microsoft.tfs.tools.poxy.Header;
@@ -32,6 +30,8 @@ import com.microsoft.tfs.tools.poxy.Request;
 import com.microsoft.tfs.tools.poxy.Response;
 import com.microsoft.tfs.tools.poxy.Status;
 import com.microsoft.tfs.tools.poxy.UTF8Utils;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 public class ConnectRequestHandler
     extends RequestHandler
@@ -112,11 +112,11 @@ public class ConnectRequestHandler
         }
         catch (InterruptedException e)
         {
-            logger.warn("Interrupted waiting on IO thread", e);
+            logger.write(LogLevel.WARNING, "Interrupted waiting on IO thread", e);
         }
         catch (ExecutionException e)
         {
-            logger.warn("Execution exception in IO thread", e);
+            logger.write(LogLevel.WARNING, "Execution exception in IO thread", e);
         }
 
         return null;
@@ -174,7 +174,7 @@ public class ConnectRequestHandler
             throw new HTTPException("Connection closed by " + address);
         }
 
-        logger.debug("Forward proxy responds: " + statusLine);
+        logger.write(LogLevel.DEBUG, "Forward proxy responds: " + statusLine);
 
         final String[] parts = statusLine.split(" ", 3);
         // Need at least 2; message is optional
@@ -309,12 +309,12 @@ public class ConnectRequestHandler
                      * 
                      * Log at a low level because this is common.
                      */
-                    logger.trace("SocketException", e);
+                    logger.write(LogLevel.TRACE, "SocketException", e);
                 }
                 catch (IOException e)
                 {
                     // Unlikely to get a non-SocketException
-                    logger.info("Non socket exception doing socket IO", e);
+                    logger.write(LogLevel.INFO, "Non socket exception doing socket IO", e);
                 }
                 finally
                 {

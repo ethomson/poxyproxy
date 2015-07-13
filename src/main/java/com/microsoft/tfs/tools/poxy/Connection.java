@@ -19,11 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-import org.apache.log4j.Logger;
-
 import com.microsoft.tfs.tools.poxy.handlers.ConnectRequestHandler;
 import com.microsoft.tfs.tools.poxy.handlers.DefaultRequestHandler;
 import com.microsoft.tfs.tools.poxy.handlers.RequestHandler;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 /**
  * A connection corresponds to one client-to-proxy TCP socket, which is
@@ -129,7 +129,8 @@ public class Connection
                          */
                         if (!keepAlive || requestCount == 0)
                         {
-                            logger.warn("Connection closed before request could be read on socket "
+                            logger.write(LogLevel.WARNING,
+                                "Connection closed before request could be read on socket "
                                 + clientToProxySocket);
                         }
                         break;
@@ -157,14 +158,14 @@ public class Connection
                 catch (SocketException e)
                 {
                     // Socket problem so don't try to write an error response
-                    logger.debug("SocketException", e);
+                    logger.write(LogLevel.DEBUG, "SocketException", e);
                     break;
                 }
                 catch (IOException e)
                 {
                     // A non-protocol error, but still don't try to write
                     // an error response
-                    logger.debug("Non protocol exception doing socket IO", e);
+                    logger.write(LogLevel.DEBUG, "Non protocol exception doing socket IO", e);
                     break;
                 }
 
@@ -208,7 +209,7 @@ public class Connection
                      * The handler was unsuccessful and we should close this
                      * connection.
                      */
-                    logger.debug("Handler " + handler + " was unsuccessful, closing connection");
+                    logger.write(LogLevel.DEBUG, "Handler " + handler + " was unsuccessful, closing connection");
 
                     // Best effort flush
                     try
@@ -239,7 +240,7 @@ public class Connection
                     && response.getContentLengthHeaderValue() != -1
                     && response.getContentLengthHeaderValue() != response.getActualResponseBodyLength())
                 {
-                    logger.warn(MessageFormat.format(
+                    logger.write(LogLevel.WARNING, MessageFormat.format(
                         "Header Content-Length {0} != {1} actually written bytes",
                         response.getContentLengthHeaderValue(),
                         response.getActualResponseBodyLength()));
@@ -256,15 +257,15 @@ public class Connection
         }
         catch (SocketTimeoutException e)
         {
-            logger.debug("Read timeout on " + clientToProxySocket);
+            logger.write(LogLevel.DEBUG, "Read timeout on " + clientToProxySocket);
         }
         catch (IOException e)
         {
-            logger.debug("IOException on socket " + clientToProxySocket, e);
+            logger.write(LogLevel.DEBUG, "IOException on socket " + clientToProxySocket, e);
         }
         catch (Exception e)
         {
-            logger.warn("Unhandled exception on socket " + clientToProxySocket, e);
+            logger.write(LogLevel.WARNING, "Unhandled exception on socket " + clientToProxySocket, e);
         }
         finally
         {

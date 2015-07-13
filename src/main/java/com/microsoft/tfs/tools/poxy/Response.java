@@ -13,7 +13,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 /**
  * Writes an HTTP response. Offers methods for writing lines which terminate
@@ -130,7 +131,7 @@ public class Response
             MessageFormat.format("{0} {1} {2}", httpVersion, Integer.toString(status), message != null ? message
                 : Status.NAMES.get(status));
 
-        logger.debug(s);
+        logger.write(LogLevel.DEBUG, s);
         writeLine(s);
     }
 
@@ -160,7 +161,7 @@ public class Response
             }
             catch (NumberFormatException e)
             {
-                logger.warn("Couldn't parse content length " + h.getValue() + " as Long", e);
+                logger.write(LogLevel.WARNING, "Couldn't parse content length " + h.getValue() + " as Long", e);
             }
         }
 

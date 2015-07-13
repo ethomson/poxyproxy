@@ -14,7 +14,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 public class IOUtils
 {
@@ -106,7 +107,7 @@ public class IOUtils
             }
 
             final Header h = new Header(line);
-            logger.trace(h.getName() + ": " + h.getValue());
+            logger.write(LogLevel.TRACE, h.getName() + ": " + h.getValue());
             ret.add(h);
         }
 
@@ -126,7 +127,7 @@ public class IOUtils
         }
         catch (IOException e)
         {
-            logger.debug("Error closing socket", e);
+            logger.write(LogLevel.DEBUG, "Error closing socket", e);
         }
     }
 
@@ -195,7 +196,7 @@ public class IOUtils
 
             if (size == 0)
             {
-                logger.trace("Got last chunk");
+                logger.write(LogLevel.TRACE, "Got last chunk");
 
                 // Should be one CRLF after the last chunk
                 readLine(input);
@@ -204,7 +205,7 @@ public class IOUtils
                 break;
             }
 
-            logger.trace("Copying chunk of " + size + " bytes");
+            logger.write(LogLevel.TRACE, "Copying chunk of " + size + " bytes");
             copyStream(input, output, size);
 
             // Should be one CRLF after the data

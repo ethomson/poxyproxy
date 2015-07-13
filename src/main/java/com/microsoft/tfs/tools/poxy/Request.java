@@ -12,7 +12,8 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 public class Request
 {
@@ -114,7 +115,7 @@ public class Request
         parseURI(parts[1]);
         parseVersion(parts[2]);
 
-        logger.debug(method + " " + uri + " " + version);
+        logger.write(LogLevel.DEBUG, method + " " + uri + " " + version);
 
         return true;
     }

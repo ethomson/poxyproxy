@@ -16,8 +16,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import com.microsoft.tfs.tools.poxy.Connection;
 import com.microsoft.tfs.tools.poxy.Constants;
 import com.microsoft.tfs.tools.poxy.HTTPException;
@@ -29,6 +27,8 @@ import com.microsoft.tfs.tools.poxy.Request;
 import com.microsoft.tfs.tools.poxy.Response;
 import com.microsoft.tfs.tools.poxy.Status;
 import com.microsoft.tfs.tools.poxy.UTF8Utils;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 /**
  * Handles GET, POST, and HEAD requests.
@@ -224,12 +224,12 @@ public class DefaultRequestHandler
         final Socket socket = connection.getPersistentProxyToServerSocket(getSocketMapKey(serverAddress));
         if (socket == null)
         {
-            logger.debug("No previous proxy-to-server socket, connecting to " + serverAddress);
+            logger.write(LogLevel.DEBUG, "No previous proxy-to-server socket, connecting to " + serverAddress);
             return connect(serverAddress);
         }
         else
         {
-            logger.debug("Found existing proxy-to-server socket " + socket);
+            logger.write(LogLevel.DEBUG, "Found existing proxy-to-server socket " + socket);
         }
 
         return socket;
@@ -277,17 +277,17 @@ public class DefaultRequestHandler
         long length = 0;
         if (HeaderUtils.isChunked(headers))
         {
-            logger.debug("Transferring chunked request content bytes");
+            logger.write(LogLevel.DEBUG, "Transferring chunked request content bytes");
             IOUtils.copyChunkedStream(request.getInputStream(), serverOutput);
         }
         else if ((length = HeaderUtils.getContentLength(headers)) > 0)
         {
-            logger.debug("Transferring " + length + " request content bytes");
+            logger.write(LogLevel.DEBUG, "Transferring " + length + " request content bytes");
             IOUtils.copyStream(request.getInputStream(), serverOutput, length);
         }
         else
         {
-            logger.debug("Request has no content");
+            logger.write(LogLevel.DEBUG, "Request has no content");
         }
 
         serverOutput.flush();
@@ -304,7 +304,7 @@ public class DefaultRequestHandler
             return;
         }
 
-        logger.debug("Forward proxy responds: " + statusLine);
+        logger.write(LogLevel.DEBUG, "Forward proxy responds: " + statusLine);
 
         final String[] parts = statusLine.split(" ", 3);
         // Need at least 2; message is optional
@@ -357,22 +357,22 @@ public class DefaultRequestHandler
             long length = 0;
             if (HeaderUtils.isChunked(headers))
             {
-                logger.debug("Transferring chunked response content bytes");
+                logger.write(LogLevel.DEBUG, "Transferring chunked response content bytes");
                 IOUtils.copyChunkedStream(serverInput, response.getStream());
             }
             else if ((length = HeaderUtils.getContentLength(headers)) > 0)
             {
-                logger.debug("Transferring " + length + " response content bytes");
+                logger.write(LogLevel.DEBUG, "Transferring " + length + " response content bytes");
                 IOUtils.copyStream(serverInput, response.getStream(), length);
             }
             else if (HeaderUtils.isConnectionClose(headers) || HeaderUtils.isProxyConnectionClose(headers))
             {
-                logger.debug("Transferring response bytes until end of stream because of Connection: close or Proxy-Connection: close");
+                logger.write(LogLevel.DEBUG, "Transferring response bytes until end of stream because of Connection: close or Proxy-Connection: close");
                 IOUtils.copyStream(serverInput, response.getStream(), -1);
             }
             else
             {
-                logger.debug("Response has no content");
+                logger.write(LogLevel.DEBUG, "Response has no content");
             }
         }
 

@@ -12,14 +12,10 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.BasicConfigurator;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
 import com.microsoft.tfs.tools.poxy.GetOptions.Option;
 import com.microsoft.tfs.tools.poxy.GetOptions.OptionException;
+import com.microsoft.tfs.tools.poxy.logger.LogLevel;
+import com.microsoft.tfs.tools.poxy.logger.Logger;
 
 public class Poxy
 {
@@ -71,7 +67,7 @@ public class Poxy
         }
         catch (IOException e)
         {
-            logger.fatal("Could not start server", e);
+            logger.write(LogLevel.FATAL, "Could not start server", e);
             System.exit(1);
         }
     }
@@ -84,9 +80,8 @@ public class Poxy
      */
     private Options getOptionsAndConfigureLogging()
     {
-        // Configure log4j with basic console logging at INFO
-        BasicConfigurator.configure(new ConsoleAppender(new PatternLayout("%d{ISO8601} %-5p [%t] %c{1} - %m%n")));
-        Logger.getRootLogger().setLevel(Level.INFO);
+        // Configure our logger at the INFO level
+        Logger.setLevel(LogLevel.INFO);
 
         /* Setup command-line options (with defaults) */
         final Option[] availableOptions =
@@ -140,8 +135,8 @@ public class Poxy
         // Debug
         if (getOptions.getArguments().get("debug") != null)
         {
-            Logger.getRootLogger().setLevel(Level.DEBUG);
-            logger.debug("Log level set to " + Level.DEBUG);
+            Logger.setLevel(LogLevel.DEBUG);
+            logger.write(LogLevel.DEBUG, "Log level set to " + LogLevel.DEBUG);
         }
 
         // Integer options
@@ -193,7 +188,7 @@ public class Poxy
             proxyOptions.setProxyCredentials(getOptions.getArguments("credentials"));
         }
 
-        logger.info("Starting server on port " + Integer.toString(proxyOptions.getLocalPort()));
+        logger.write(LogLevel.INFO, "Starting server on port " + Integer.toString(proxyOptions.getLocalPort()));
 
         return proxyOptions;
     }
