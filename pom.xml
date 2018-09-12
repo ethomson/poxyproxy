@@ -44,7 +44,9 @@
                 <version>2.4</version>
                 <configuration>
                     <archive>
-                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <manifest>
+                            <mainClass>com.microsoft.tfs.tools.poxy.Poxy</mainClass>
+                        </manifest>
                     </archive>
                 </configuration>
             </plugin>
