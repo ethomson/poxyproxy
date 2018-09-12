@@ -5,7 +5,7 @@
 
     <groupId>com.microsoft.tfs.tools.poxy</groupId>
     <artifactId>com.microsoft.tfs.tools.poxy</artifactId>
-    <version>0.0.1.0</version>
+    <version>0.2.0</version>
     <name>com.microsoft.tfs.tools.poxy</name>
 
     <properties>
