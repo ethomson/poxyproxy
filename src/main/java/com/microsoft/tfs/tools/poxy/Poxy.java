@@ -7,6 +7,7 @@
 package com.microsoft.tfs.tools.poxy;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -37,11 +38,11 @@ public class Poxy
 
     private static void usage()
     {
-        System.err.println("Usage: Poxy [-d|--debug] [-p|--port port] [--max-threads num]");
-        System.err.println("         [--connect-timeout secs] [--socket-read-timeout secs]");
-        System.err.println("         [--forward-proxy url] [--forward-proxy-bypass host1,]...");
-        System.err.println("         [--default-domain domain] [--add-response-delay ms]");
-        System.err.println("         [--credentials username:password,]...");
+        System.err.println("Usage: Poxy [-d|--debug] [-a|--address address] [-p|--port port]");
+        System.err.println("         [--max-threads num] [--connect-timeout secs]");
+        System.err.println("         [--socket-read-timeout secs] [--forward-proxy url]");
+        System.err.println("         [--forward-proxy-bypass host1,...] [--default-domain domain]");
+        System.err.println("         [--add-response-delay ms] [--credentials username:password,...]");
     }
 
     public void run()
@@ -57,7 +58,7 @@ public class Poxy
         try
         {
             @SuppressWarnings("resource")
-            final ServerSocket serverSocket = new ServerSocket(options.getLocalPort(), 4096);
+            final ServerSocket serverSocket = new ServerSocket(options.getLocalPort(), 4096, InetAddress.getByName(options.getLocalAddress()));
 
             while (true)
             {
@@ -88,6 +89,7 @@ public class Poxy
             new Option[]
             {
                 /* Bind on port 8000 */
+                new Option("address", 'a', true, "0.0.0.0"),
                 new Option("port", 'p', true, "8000"),
 
                 /* Allow debugging */
@@ -142,6 +144,11 @@ public class Poxy
         // Integer options
         try
         {
+            if (getOptions.getArgument("address") != null)
+            {
+                proxyOptions.setLocalAddress(getOptions.getArgument("address"));
+            }
+
             if (getOptions.getArgument("port") != null)
             {
                 proxyOptions.setLocalPort(Integer.parseInt(getOptions.getArgument("port")));
@@ -188,7 +195,7 @@ public class Poxy
             proxyOptions.setProxyCredentials(getOptions.getArguments("credentials"));
         }
 
-        logger.write(LogLevel.INFO, "Starting server on port " + Integer.toString(proxyOptions.getLocalPort()));
+        logger.write(LogLevel.INFO, "Starting server on " + proxyOptions.getLocalAddress() + ":" + Integer.toString(proxyOptions.getLocalPort()));
 
         return proxyOptions;
     }

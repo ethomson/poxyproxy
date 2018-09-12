@@ -18,6 +18,11 @@ import java.util.Set;
 public class Options
 {
     /**
+     * Local address to bind to.
+     */
+    private volatile String localAddress = null;
+
+    /**
      * Local TCP port to bind to.
      */
     private volatile int localPort = 8000;
@@ -98,6 +103,16 @@ public class Options
 
     public Options()
     {
+    }
+
+    public String getLocalAddress()
+    {
+        return this.localAddress;
+    }
+
+    public void setLocalAddress(String localAddress)
+    {
+        this.localAddress = localAddress;
     }
 
     public int getLocalPort()
