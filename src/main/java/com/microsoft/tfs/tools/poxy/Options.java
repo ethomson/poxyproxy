@@ -28,6 +28,21 @@ public class Options
     private volatile int localPort = 8000;
 
     /**
+     * Local TCP port to bind to (SSL/TLS).
+     */
+    private volatile int localSSLPort = 0;
+
+    /**
+     * SSL Keystore file path.
+     */
+    private volatile String sslKeystoreFile = null;
+
+    /**
+     * Password for SSL Keystore file.
+     */
+    private volatile String sslKeystorePassword = null;
+
+    /**
      * If a connection to a server or forward proxy takes longer than this many
      * seconds, it errors with 504 Gateway Timeout.
      */
@@ -123,6 +138,36 @@ public class Options
     public void setLocalPort(int localPort)
     {
         this.localPort = localPort;
+    }
+
+    public int getLocalSSLPort()
+    {
+            return this.localSSLPort;
+    }
+
+    public void setLocalSSLPort(int localSSLPort)
+    {
+            this.localSSLPort = localSSLPort;
+    }
+
+    public String getSSLKeystoreFile()
+    {
+            return this.sslKeystoreFile;
+    }
+
+    public void setSSLKeystoreFile(String sslKeystoreFile)
+    {
+            this.sslKeystoreFile = sslKeystoreFile;
+    }
+
+    public String getSSLKeystorePassword()
+    {
+            return this.sslKeystorePassword;
+    }
+
+    public void setSSLKeystorePassword(String sslKeystorePassword)
+    {
+            this.sslKeystorePassword = sslKeystorePassword;
     }
 
     public int getConnectTimeoutSeconds()
@@ -298,40 +343,40 @@ public class Options
     
     public boolean isAuthenticationRequired()
     {
-    	return authenticationRequired;
+        return authenticationRequired;
     }
     
     public void setAuthenticationRequired(boolean required)
     {
-    	this.authenticationRequired = required;
+        this.authenticationRequired = required;
     }
     
     public void setProxyCredentials(List<String> credentials)
     {
-    	synchronized (proxyCredentials)
-    	{
-    		for (String credential : credentials)
-    		{
-    			String[] parts = credential.split(":",  2);
-    			proxyCredentials.put(parts[0], parts[1]);
-    		}
-    	}
+        synchronized (proxyCredentials)
+        {
+            for (String credential : credentials)
+            {
+                String[] parts = credential.split(":",  2);
+                proxyCredentials.put(parts[0], parts[1]);
+            }
+        }
     }
     
     public void addProxyCredential(String username, String password)
     {
-    	synchronized (proxyCredentials)
-    	{
-    		proxyCredentials.put(username, password);
-    	}
+        synchronized (proxyCredentials)
+        {
+            proxyCredentials.put(username, password);
+        }
     }
 
     public boolean credentialsMatchProxyCredentials(String username, String password)
     {
-    	synchronized (proxyCredentials)
-    	{
-    		return password.equals(proxyCredentials.get(username));
-    	}
+        synchronized (proxyCredentials)
+        {
+            return password.equals(proxyCredentials.get(username));
+        }
     }
 
     public int getMaxHeaderSizeBytes()
