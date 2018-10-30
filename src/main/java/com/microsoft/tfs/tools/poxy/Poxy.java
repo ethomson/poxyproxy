@@ -44,12 +44,12 @@ public class Poxy
 
     private static void usage()
     {
-        System.err.println("Usage: Poxy [-d|--debug] [-a|--address address] [-p|--port port]");
-        System.err.println("         [-s|--ssl-port port] [--ssl-keystore file] [--ssl-keystore-password pass]");
-        System.err.println("         [--max-threads num] [--connect-timeout secs]");
-        System.err.println("         [--socket-read-timeout secs] [--forward-proxy url]");
-        System.err.println("         [--forward-proxy-bypass host1,...] [--default-domain domain]");
-        System.err.println("         [--add-response-delay ms] [--credentials username:password,...]");
+        System.err.println("Usage: Poxy [-q|--quiet] [-d|--debug] [-a|--address address] [-p|--port port]");
+        System.err.println("       [-s|--ssl-port port] [--ssl-keystore file] [--ssl-keystore-password pass]");
+        System.err.println("       [--max-threads num] [--connect-timeout secs]");
+        System.err.println("       [--socket-read-timeout secs] [--forward-proxy url]");
+        System.err.println("       [--forward-proxy-bypass host1,...] [--default-domain domain]");
+        System.err.println("       [--add-response-delay ms] [--credentials username:password,...]");
     }
 
     public void run()
@@ -150,29 +150,34 @@ public class Poxy
 
         /* Setup command-line options (with defaults) */
         final Option[] availableOptions = new Option[] {
-                /* Bind on port 8000 */
-                new Option("address", 'a', true, "0.0.0.0"), new Option("port", 'p', true, "8000"),
+            /* Bind on port 8000 */
+            new Option("address", 'a', true, "0.0.0.0"), new Option("port", 'p', true, "8000"),
 
-                /* SSL configuration */
-                new Option("ssl-port", 's', true), new Option("ssl-keystore", true),
-                new Option("ssl-keystore-password", true),
+            /* SSL configuration */
+            new Option("ssl-port", 's', true),
+            new Option("ssl-keystore", true),
+            new Option("ssl-keystore-password", true),
 
-                /* Allow debugging */
-                new Option("debug", 'd'),
+            /* No output, or verbose/debugging output */
+            new Option("quiet", 'q'),
+            new Option("debug", 'd'),
 
-                /* IO */
-                new Option("max-threads", true), new Option("connect-timeout", true),
-                new Option("socket-read-timeout", true),
+            /* IO */
+            new Option("max-threads", true),
+            new Option("connect-timeout", true),
+            new Option("socket-read-timeout", true),
 
-                /* Proxy chaining */
-                new Option("forward-proxy", true), new Option("forward-proxy-bypass", true, true),
-                new Option("default-domain", true),
+            /* Proxy chaining */
+            new Option("forward-proxy", true),
+            new Option("forward-proxy-bypass", true, true),
+            new Option("default-domain", true),
 
-                /* Authentication */
-                new Option("credentials", true, true),
+            /* Authentication */
+            new Option("credentials", true, true),
 
-                /* Debugging aids */
-                new Option("add-response-delay", true, "0"), };
+            /* Debugging aids */
+            new Option("add-response-delay", true, "0")
+        };
 
         final GetOptions getOptions = new GetOptions(availableOptions);
 
@@ -195,6 +200,12 @@ public class Poxy
         }
 
         Options proxyOptions = new Options();
+
+        // Quiet
+        if (getOptions.getArguments().get("quiet") != null)
+        {
+            Logger.setLevel(LogLevel.FATAL);
+        }
 
         // Debug
         if (getOptions.getArguments().get("debug") != null)
