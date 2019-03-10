@@ -309,7 +309,7 @@ implements Runnable
 				String username = responseMessage.getUsername();
 				String password = options.getProxyCredentials(username);
 
-				if (NTLM.verifyResponse(username, "", password, ntlmChallenge, responseMessage))
+				if (NTLM.verifyResponse(username, null, password, ntlmChallenge, responseMessage))
 				{
 					authenticated = true;
 					return true;

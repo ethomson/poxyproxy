@@ -34,6 +34,9 @@ public class NTLM
 
 	public static boolean verifyResponse(String username, String domain, String password, NTLMMessage.Type2Message challenge, NTLMMessage.Type3Message response) throws Exception
 	{
+		// If we doesn't care about the domain, just use the web user's
+		domain = domain != null ? domain : response.getDomain();
+
 		// Some clients (notably firefox) like to send an NTLM2 Session Response here
 		// instead of a full-fledged NTLM2 response.
 		if ((response.getFlags() & NTLMMessage.NTLM_NEGOTIATE_NTLM2_SIGN_AND_SEAL) == NTLMMessage.NTLM_NEGOTIATE_NTLM2_SIGN_AND_SEAL)
@@ -42,7 +45,7 @@ public class NTLM
 		}
 		else if(!allowLM)
 		{
-			return (verifyNTLM2Response(username, domain, password, challenge, response) && verifyLM2Response(username, domain, password, challenge, response));
+			return (verifyNTLM2Response(username, domain, password, challenge, response));
 		}
 
 		return (verifyLMResponse(username, domain, password, challenge, response) && verifyNTLMResponse(username, domain, password, challenge, response));
@@ -111,9 +114,10 @@ public class NTLM
 		// Skip if this is not the credentials presented by the client
 		if (
 				!username.equals(response.getUsername().toUpperCase()) ||
-				!domain.equals(response.getDomain().toUpperCase())
-				)
+				!domain.equals(response.getDomain().toUpperCase()))
+		{
 			return false;
+		}
 
 		if ((challenge.getFlags() & NTLMMessage.NTLM_NEGOTIATE_TARGET_INFO) == NTLMMessage.NTLM_NEGOTIATE_TARGET_INFO)
 		{
