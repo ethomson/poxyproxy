@@ -17,7 +17,7 @@ public abstract class HeaderUtils
 	 */
 	public static final HeaderFilter NEVER_TRANSMIT_FILTER = new HeaderFilter(new String[]
 			{
-					"trailer", "upgrade"
+					"trailer", "upgrade", "via"
 			});
 
 	/*

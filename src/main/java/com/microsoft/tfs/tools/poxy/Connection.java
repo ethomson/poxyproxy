@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.Base64;
 import java.util.HashMap;
@@ -180,7 +181,15 @@ implements Runnable
 				if (options.isAuthenticationRequired() &&
 						!handleAuthentication(request, response))
 				{
-					keepAlive = HeaderUtils.isConnectionKeepAlive(response.getHeaders());
+					if (HeaderUtils.isConnectionKeepAlive(response.getHeaders()))
+					{
+						keepAlive = true;
+					}
+					else if (HeaderUtils.isConnectionClose(response.getHeaders()))
+					{
+						keepAlive = false;
+					}
+
 					continue;
 				}
 
@@ -309,7 +318,7 @@ implements Runnable
 				String username = responseMessage.getUsername();
 				String password = options.getProxyCredentials(username);
 
-				if (NTLM.verifyResponse(username, null, password, ntlmChallenge, responseMessage))
+				if (password != null && NTLM.verifyResponse(username, null, password, ntlmChallenge, responseMessage))
 				{
 					authenticated = true;
 					return true;
@@ -344,29 +353,27 @@ implements Runnable
 			if (challengeMessage != null)
 			{
 				responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "NTLM " + challengeMessage));
-				responseHeaders.add(new Header(Constants.CONNECTION_HEADER, Constants.CONNECTION_KEEP_ALIVE));
 			}
 			else
 			{
 				responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "NTLM"));
-				responseHeaders.add(new Header(Constants.CONNECTION_HEADER, Constants.CONNECTION_CLOSE));
 			}
 		}
 		else if (options.getAuthenticationType() == AuthenticationType.Basic)
 		{
 			responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "Basic realm=\"Proxy\""));
-			responseHeaders.add(new Header(Constants.CONNECTION_HEADER, Constants.CONNECTION_CLOSE));
 		}
 
 		String responseHtml = "<html><head><title>Proxy Authentication Required</title></head><body><p>Proxy Authentication Required</p></body></html>";
+		byte[] responseBytes = responseHtml.getBytes(StandardCharsets.US_ASCII);
 
-		responseHeaders.add(new Header(Constants.CONTENT_TYPE_HEADER, Constants.CONTENT_TYPE_TEXT_HTML));
-		responseHeaders.add(new Header(Constants.CONTENT_LENGTH_HEADER, Integer.toString(responseHtml.length())));
+		responseHeaders.add(new Header(Constants.CONTENT_LENGTH_HEADER, Integer.toString(responseBytes.length)));
+		responseHeaders.add(new Header(Constants.CONTENT_TYPE_HEADER, Constants.CONTENT_TYPE_TEXT_HTML + "; charset=iso-8859-1"));
 
 		response.writeHeaders(responseHeaders);
 		response.endHeaders();
 
-		response.writeLine(responseHtml);
+		response.getStream().write(responseBytes);
 		response.flush();
 		return false;
 	}

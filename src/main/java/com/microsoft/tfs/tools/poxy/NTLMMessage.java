@@ -2,6 +2,7 @@ package com.microsoft.tfs.tools.poxy;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 /// <summary>
 /// Handy methods for decoding NTLM messages
@@ -10,9 +11,23 @@ public abstract class NTLMMessage
 {
 	public static final int FLAG_NEGOTIATE_UNICODE = 0x00000001;
 	public static final int FLAG_NEGOTIATE_OEM = 0x00000002;
+	public static final int FLAG_REQUEST_TARGET = 0x00000004;
 	public static final int FLAG_NEGOTIATE_NTLM = 0x00000200;
-	public static final int NTLM_NEGOTIATE_NTLM2_SIGN_AND_SEAL = 0x00080000;
-	public static final int NTLM_NEGOTIATE_TARGET_INFO = 0x00800000;
+	public static final int FLAG_NEGOTIATE_ALWAYS_SIGN = 0x00008000;
+	public static final int FLAG_TARGET_TYPE_DOMAIN = 0x00010000;
+	public static final int FLAG_TARGET_TYPE_SERVER = 0x00020000;
+	public static final int FLAG_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000;
+	public static final int FLAG_NEGOTIATE_TARGET_INFO = 0x00800000;
+	public static final int FLAG_NEGOTIATE_VERSION = 0x02000000;
+	public static final int FLAG_NEGOTIATE_128 = 0x20000000;
+	public static final int FLAG_NEGOTIATE_56 = 0x80000000;
+
+	public static final int TARGET_INFO_END = 0;
+	public static final int TARGET_INFO_SERVER = 1;
+	public static final int TARGET_INFO_DOMAIN = 2;
+	public static final int TARGET_INFO_SERVER_DNS = 3;
+	public static final int TARGET_INFO_DOMAIN_DNS = 4;
+	public static final int TARGET_INFO_TIMESTAMP = 7;
 
 	public static NTLMMessage parse(byte[] message) throws Exception
 	{
@@ -121,17 +136,34 @@ public abstract class NTLMMessage
 		addByte(buf, pos + 1, (byte) ((shortnum & 0x0000FF00) >> 8));
 	}
 
-	private static void addLong(final byte[] buf, final int pos, final int longnum)
+	private static void addInt(final byte[] buf, final int pos, final int intnum)
 	{
 		if (pos < 0 || buf.length < pos + 4)
 		{
 			throw new ArrayIndexOutOfBoundsException();
 		}
 
-		addByte(buf, pos, (byte) ((longnum & 0x000000FF)));
-		addByte(buf, pos + 1, (byte) ((longnum & 0x0000FF00) >> 8));
-		addByte(buf, pos + 2, (byte) ((longnum & 0x00FF0000) >> 16));
-		addByte(buf, pos + 3, (byte) ((longnum & 0xFF000000) >> 24));
+		addByte(buf, pos, (byte) ((intnum & 0x000000FF)));
+		addByte(buf, pos + 1, (byte) ((intnum & 0x0000FF00) >> 8));
+		addByte(buf, pos + 2, (byte) ((intnum & 0x00FF0000) >> 16));
+		addByte(buf, pos + 3, (byte) ((intnum & 0xFF000000) >> 24));
+	}
+
+	private static void addLong(final byte[] buf, final int pos, final long longnum)
+	{
+		if (pos < 0 || buf.length < pos + 4)
+		{
+			throw new ArrayIndexOutOfBoundsException();
+		}
+
+		addByte(buf, pos, (byte) ((longnum & 0x00000000000000FFL)));
+		addByte(buf, pos + 1, (byte) ((longnum & 0x000000000000FF00L) >> 8));
+		addByte(buf, pos + 2, (byte) ((longnum & 0x0000000000FF0000L) >> 16));
+		addByte(buf, pos + 3, (byte) ((longnum & 0x00000000FF000000L) >> 24));
+		addByte(buf, pos + 4, (byte) ((longnum & 0x000000FF00000000L) >> 32));
+		addByte(buf, pos + 5, (byte) ((longnum & 0x0000FF0000000000L) >> 40));
+		addByte(buf, pos + 6, (byte) ((longnum & 0x00FF000000000000L) >> 48));
+		addByte(buf, pos + 7, (byte) ((longnum & 0xFF00000000000000L) >> 56));
 	}
 
 	static class Type1Message extends NTLMMessage
@@ -206,6 +238,7 @@ public abstract class NTLMMessage
 
 		private byte[] context;
 		private byte[] targetInformation;
+		private byte[] version;
 
 		public Type2Message(byte[] message) throws Exception
 		{
@@ -240,7 +273,7 @@ public abstract class NTLMMessage
 			}
 		}
 
-		public Type2Message(int flags, byte[] challenge, String target, byte[] targetInfo)
+		public Type2Message(int flags, byte[] challenge, String target, TargetInformation targetInfo, Version version)
 		{
 			assert(challenge != null && challenge.length == 8);
 			assert(target != null);
@@ -254,16 +287,14 @@ public abstract class NTLMMessage
 
 			this.context = null;
 
-			if (targetInformation != null && targetInformation.length > 0)
+			if (targetInfo != null)
 			{
-				flags |= NTLM_NEGOTIATE_TARGET_INFO;
-
-				this.targetInformation = new byte[targetInformation.length];
-				System.arraycopy(targetInformation,  0,  this.targetInformation,  0, this.targetInformation.length);
+				this.targetInformation = targetInfo.createTargetInformation(charset);
 			}
-			else
+
+			if (version != null)
 			{
-				this.targetInformation = null;
+				this.version = version.createVersion();
 			}
 
 			this.flags = flags;
@@ -302,18 +333,26 @@ public abstract class NTLMMessage
 
 		public byte[] createMessage()
 		{
+			int nextOffset = (targetInformation == null) ? 32 : 48;
+
+			final int versionLen = version != null ? version.length : 0;
+			final int versionOffset = nextOffset;
+			nextOffset += versionLen;
+
 			final int targetLen = target.length;
-			final int targetOffset = targetInformation == null ? 32 : 48;
+			final int targetOffset = nextOffset;
+			nextOffset += targetLen;
 
 			final int targetInfoLen = targetInformation != null ? targetInformation.length : 0;
-			final int targetInfoOffset = targetOffset + targetLen;
+			final int targetInfoOffset = nextOffset;
+			nextOffset += targetInfoLen;
 
-			final int type2Length = targetInfoOffset + targetInfoLen;
+			final int type2Length = nextOffset;
 
 			byte[] type2 = new byte[type2Length];
 
 			addBytes(type2, 0, "NTLMSSP".getBytes(StandardCharsets.US_ASCII)); // Signature
-			addLong(type2, 8, 2); // Type 2 message indicator
+			addInt(type2, 8, 2); // Type 2 message indicator
 
 			// target name information
 			addShort(type2, 12, targetLen); // length
@@ -321,7 +360,7 @@ public abstract class NTLMMessage
 			addShort(type2, 16, targetOffset); // offset
 			addShort(type2, 18, 0); // null
 
-			addLong(type2, 20, flags);
+			addInt(type2, 20, flags);
 
 			addBytes(type2, 24, challenge);
 
@@ -334,6 +373,21 @@ public abstract class NTLMMessage
 				addShort(type2, 42, targetInfoLen); // length
 				addShort(type2, 44, targetInfoOffset); // offset
 				addShort(type2, 46, 0); // null
+			}
+
+			if (version != null)
+			{
+				addBytes(type2, versionOffset, version);
+			}
+
+			if (target != null)
+			{
+				addBytes(type2, targetOffset, target);
+			}
+
+			if (targetInformation != null)
+			{
+				addBytes(type2, targetInfoOffset, targetInformation);
 			}
 
 			return type2;
@@ -435,6 +489,119 @@ public abstract class NTLMMessage
 		public byte[] getNTLMResponse()
 		{
 			return ntlmResponse;
+		}
+	}
+
+	static class TargetInformation
+	{
+		private String domain;
+		private String server;
+		private String dnsDomain;
+		private String dnsServer;
+		private Date timestamp;
+
+		public TargetInformation(String domain, String server, String dnsDomain, String dnsServer, Date timestamp)
+		{
+			this.domain = domain;
+			this.server = server;
+			this.dnsDomain = dnsDomain;
+			this.dnsServer = dnsServer;
+			this.timestamp = timestamp;
+		}
+
+		public byte[] createTargetInformation(Charset charset)
+		{
+			byte[] domainName = domain != null ? createTargetInformationName(TARGET_INFO_DOMAIN, domain, charset) : new byte[0];
+			byte[] serverName = server != null ? createTargetInformationName(TARGET_INFO_SERVER, server, charset) : new byte[0];
+			byte[] dnsDomainName = dnsDomain != null ? createTargetInformationName(TARGET_INFO_DOMAIN_DNS, dnsDomain, charset) : new byte[0];
+			byte[] dnsServerName = dnsServer != null ? createTargetInformationName(TARGET_INFO_SERVER_DNS, dnsServer, charset) : new byte[0];
+			byte[] timestampValue = timestamp != null ? createTargetInformationTimestamp(timestamp) : new byte[0];
+			byte[] end = createTargetInformationEnd();
+
+			byte[] targetInfo = new byte[domainName.length + serverName.length + dnsDomainName.length + dnsServerName.length + timestampValue.length + end.length];
+
+			int nextOffset = 0;
+
+			addBytes(targetInfo, nextOffset, domainName);
+			nextOffset += domainName.length;
+
+			addBytes(targetInfo, nextOffset, serverName);
+			nextOffset += serverName.length;
+
+			addBytes(targetInfo, nextOffset, dnsDomainName);
+			nextOffset += dnsDomainName.length;
+
+			addBytes(targetInfo, nextOffset, dnsServerName);
+			nextOffset += dnsServerName.length;
+
+			addBytes(targetInfo, nextOffset, timestampValue);
+			nextOffset += timestampValue.length;
+
+			addBytes(targetInfo, nextOffset, end);
+
+			return targetInfo;
+		}
+
+		public byte[] createTargetInformationName(int type, String name, Charset charset)
+		{
+			byte[] nameBytes = name.getBytes(charset);
+			byte[] targetInformationName = new byte[nameBytes.length + 4];
+
+			addShort(targetInformationName, 0, type);
+			addShort(targetInformationName, 2, nameBytes.length);
+			addBytes(targetInformationName, 4, nameBytes);
+
+			return targetInformationName;
+		}
+
+		public byte[] createTargetInformationTimestamp(Date timestamp)
+		{
+			byte[] targetInformationTimestamp = new byte[12];
+			long filetime = (timestamp.getTime() + 11644473600000L) * 10000L;
+
+			addShort(targetInformationTimestamp, 0, TARGET_INFO_TIMESTAMP);
+			addShort(targetInformationTimestamp, 2, 8);
+			addLong(targetInformationTimestamp, 4, filetime);
+
+			return targetInformationTimestamp;
+		}
+
+		public byte[] createTargetInformationEnd()
+		{
+			byte[] targetInformationEnd = new byte[4];
+
+			addShort(targetInformationEnd, 0, TARGET_INFO_END);
+			addShort(targetInformationEnd, 2, 0);
+
+			return targetInformationEnd;
+		}
+	}
+
+	static class Version
+	{
+		private byte major;
+		private byte minor;
+		private short build;
+
+		public Version(byte major, byte minor, short build)
+		{
+			this.major = major;
+			this.minor = minor;
+			this.build = build;
+		}
+
+		public byte[] createVersion()
+		{
+			byte[] version = new byte[8];
+
+			addByte(version, 0, major);
+			addByte(version, 1, minor);
+			addShort(version, 2, build);
+			addShort(version, 4, 0); // reserved
+			addByte(version, 6, (byte)0); // reserved
+			addByte(version, 7, (byte)15); // NTLM version
+
+			return version;
 		}
 	}
 }

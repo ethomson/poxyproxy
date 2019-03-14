@@ -3,6 +3,7 @@ package com.microsoft.tfs.tools.poxy;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.Provider;
+import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.crypto.Cipher;
@@ -22,14 +23,41 @@ public class NTLM
 
 	public static NTLMMessage.Type2Message createChallenge(NTLMMessage.Type1Message negotiate) throws Exception
 	{
-		int flags = NTLMMessage.FLAG_NEGOTIATE_OEM |
-				(negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_UNICODE) |
-				NTLMMessage.FLAG_NEGOTIATE_NTLM;
+		int flags = 0;
+
+		if ((negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_UNICODE) == NTLMMessage.FLAG_NEGOTIATE_UNICODE)
+		{
+			flags |= NTLMMessage.FLAG_NEGOTIATE_UNICODE;
+		}
+		else if ((negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_OEM) == NTLMMessage.FLAG_NEGOTIATE_OEM)
+		{
+			flags |= NTLMMessage.FLAG_NEGOTIATE_OEM;
+		}
+		else
+		{
+			throw new Exception("Unknown charset");
+		}
+
+		final String hostname = Utils.getHostname();
+
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_REQUEST_TARGET);
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_NTLM);
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_ALWAYS_SIGN);
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_EXTENDED_SESSIONSECURITY);
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_128);
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_56);
+
+		flags |= NTLMMessage.FLAG_TARGET_TYPE_SERVER;
+		flags |= NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO;
+		final NTLMMessage.TargetInformation targetInfo = new NTLMMessage.TargetInformation(hostname, hostname, hostname, hostname, new Date());
+
+		flags |= (negotiate.getFlags() & NTLMMessage.FLAG_NEGOTIATE_VERSION);
+		final NTLMMessage.Version version = new NTLMMessage.Version((byte)0, (byte)5, (short)42);
 
 		final byte[] challenge = new byte[8];
 		ThreadLocalRandom.current().nextBytes(challenge);
 
-		return new NTLMMessage.Type2Message(flags, challenge, "poxyproxy", null);
+		return new NTLMMessage.Type2Message(flags, challenge, hostname, targetInfo, version);
 	}
 
 	public static boolean verifyResponse(String username, String domain, String password, NTLMMessage.Type2Message challenge, NTLMMessage.Type3Message response) throws Exception
@@ -37,18 +65,7 @@ public class NTLM
 		// If we doesn't care about the domain, just use the web user's
 		domain = domain != null ? domain : response.getDomain();
 
-		// Some clients (notably firefox) like to send an NTLM2 Session Response here
-		// instead of a full-fledged NTLM2 response.
-		if ((response.getFlags() & NTLMMessage.NTLM_NEGOTIATE_NTLM2_SIGN_AND_SEAL) == NTLMMessage.NTLM_NEGOTIATE_NTLM2_SIGN_AND_SEAL)
-		{
-			return (verifyNTLM2SessionResponse(username, domain, password, challenge, response));
-		}
-		else if(!allowLM)
-		{
-			return (verifyNTLM2Response(username, domain, password, challenge, response));
-		}
-
-		return (verifyLMResponse(username, domain, password, challenge, response) && verifyNTLMResponse(username, domain, password, challenge, response));
+		return (verifyNTLM2Response(username, domain, password, challenge, response));
 	}
 
 	private static boolean verifyLMResponse(String username, String domain, String password, NTLMMessage.Type2Message challenge, NTLMMessage.Type3Message response) throws Exception
@@ -119,7 +136,7 @@ public class NTLM
 			return false;
 		}
 
-		if ((challenge.getFlags() & NTLMMessage.NTLM_NEGOTIATE_TARGET_INFO) == NTLMMessage.NTLM_NEGOTIATE_TARGET_INFO)
+		if ((challenge.getFlags() & NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO) == NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO)
 		{
 			if (challenge.getTargetInformation() == null)
 			{
@@ -150,10 +167,6 @@ public class NTLM
 
 		// Ensure the NTLM Response header is valid (0x01010000)
 		if (responseData[0] != 1 || responseData[1] != 1 || responseData[2] != 0 || responseData[3] != 0)
-			return false;
-
-		// Ensure the target information is the same as provided by the server
-		if (targetInfoLen > 0 && !arrayEquals(responseData, 28, challenge.getTargetInformation(), 0, targetInfoLen))
 			return false;
 
 		// Get the NTLM2 hash
