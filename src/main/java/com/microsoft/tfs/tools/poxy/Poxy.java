@@ -44,8 +44,9 @@ public class Poxy
 
 	private static void usage()
 	{
-		System.err.println("Usage: Poxy [-q|--quiet] [-d|--debug] [-a|--address address] [-p|--port port]");
-		System.err.println("       [-s|--ssl-port port] [--ssl-keystore file] [--ssl-keystore-password pass]");
+		System.err.println("Usage: Poxy [-q|--quiet] [-d|--debug] [--trace]");
+		System.err.println("       [-a|--address address] [-p|--port port] [-s|--ssl-port port]");
+		System.err.println("       [--ssl-keystore file] [--ssl-keystore-password pass]");
 		System.err.println("       [--max-threads num] [--connect-timeout secs]");
 		System.err.println("       [--socket-read-timeout secs] [--forward-proxy url]");
 		System.err.println("       [--forward-proxy-bypass host1,...] [--default-domain domain]");
@@ -162,6 +163,7 @@ public class Poxy
 				/* No output, or verbose/debugging output */
 				new Option("quiet", 'q'),
 				new Option("debug", 'd'),
+				new Option("trace"),
 
 				/* IO */
 				new Option("max-threads", true),
@@ -214,6 +216,13 @@ public class Poxy
 		{
 			Logger.setLevel(LogLevel.DEBUG);
 			logger.write(LogLevel.DEBUG, "Log level set to " + LogLevel.DEBUG);
+		}
+
+		// Trace
+		if (getOptions.getArguments().get("trace") != null)
+		{
+			Logger.setLevel(LogLevel.TRACE);
+			logger.write(LogLevel.TRACE, "Log level set to " + LogLevel.TRACE);
 		}
 
 		// Integer options

@@ -296,8 +296,14 @@ implements Runnable
 		final List<Header> responseHeaders = response.getHeaders();
 		String challengeMessage = null;
 
+		if (authentication != null)
+		{
+			logger.write(LogLevel.TRACE, "Received authentication header: " + authentication.getValue());
+		}
+
 		if (authenticated)
 		{
+			logger.write(LogLevel.DEBUG, "Connection authentication; continuing");
 			return true;
 		}
 		else if (options.getAuthenticationType() == AuthenticationType.NTLM &&
@@ -320,14 +326,18 @@ implements Runnable
 
 				if (password != null && NTLM.verifyResponse(username, null, password, ntlmChallenge, responseMessage))
 				{
+					logger.write(LogLevel.DEBUG,  "NTLM authentication accepted");
+
 					authenticated = true;
 					return true;
 				}
 
+				logger.write(LogLevel.DEBUG, "Authentication failed in NTLM response");
 				ntlmChallenge = null;
 			}
 			else
 			{
+				logger.write(LogLevel.DEBUG, "Invalid NTLM message received");
 				ntlmChallenge = null;
 			}
 		}
@@ -342,8 +352,11 @@ implements Runnable
 
 			if (options.credentialsMatchProxyCredentials(credentials[0], credentials[1]))
 			{
+				logger.write(LogLevel.DEBUG,  "Basic authentication accepted");
 				return true;
 			}
+
+			logger.write(LogLevel.DEBUG, "Authentication failed in Basic response");
 		}
 
 		response.writeStatus(Status.PROXY_AUTHENTICATION_REQUIRED, "Proxy Authentication Required");
@@ -352,15 +365,20 @@ implements Runnable
 		{
 			if (challengeMessage != null)
 			{
+				logger.write(LogLevel.DEBUG, "Sending NTLM challenge");
+				logger.write(LogLevel.TRACE, "Challenge is: NTLM " + challengeMessage);
+
 				responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "NTLM " + challengeMessage));
 			}
 			else
 			{
+				logger.write(LogLevel.DEBUG, "Sending NTLM authentication request");
 				responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "NTLM"));
 			}
 		}
 		else if (options.getAuthenticationType() == AuthenticationType.Basic)
 		{
+			logger.write(LogLevel.DEBUG, "Sending Basic authentication request");
 			responseHeaders.add(new Header(Constants.PROXY_AUTHENTICATE_HEADER, "Basic realm=\"Proxy\""));
 		}
 
