@@ -123,15 +123,26 @@ public class NTLM
 		assert(username != null && username.length() > 0);
 		assert(password != null && password.length() > 0);
 
+		int targetInfoLen = 0;
+
 		username = username.toUpperCase();
-		domain = domain.toUpperCase();
 
 		// Skip if this is not the credentials presented by the client
 		if (
 				!username.equals(response.getUsername().toUpperCase()) ||
-				!domain.equals(response.getDomain().toUpperCase()))
+				!domain.toUpperCase().equals(response.getDomain().toUpperCase()))
 		{
 			return false;
+		}
+
+		if ((challenge.getFlags() & NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO) == NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO)
+		{
+			if (challenge.getTargetInformation() == null)
+			{
+				throw new Exception("Invalid NTLM2 challenge: no target information");
+			}
+
+			targetInfoLen = challenge.getTargetInformation().length;
 		}
 
 		// Get the NTLM2 response
@@ -326,7 +337,7 @@ public class NTLM
 		byte[] ntlmHash = ntlmHash(password);
 
 		// we need the username and domain concatenated
-		String usernameDomain = username.toUpperCase() + domain.toUpperCase();
+		String usernameDomain = username.toUpperCase() + domain;
 		byte[] usernameDomainBytes = usernameDomain.getBytes(StandardCharsets.UTF_16LE);
 
 		// ntlm2 hash is created by running HMAC-MD5 on the unicode

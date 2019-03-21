@@ -400,7 +400,7 @@ public abstract class NTLMMessage
 
 		private final byte[] lmResponse;
 		private final byte[] ntlmResponse;
-		private final byte[] sessionKey;
+		private final byte[] challenge;
 
 		private final String domain;
 		private final String username;
@@ -435,7 +435,6 @@ public abstract class NTLMMessage
 
 			lmResponse = getBytes(message, lmResponsePos, lmResponseLen);
 			ntlmResponse = getBytes(message, ntlmResponsePos, ntlmResponseLen);
-			sessionKey = getBytes(message, sessionKeyPos, sessionKeyLen);
 
 			byte[] domainData = getBytes(message, domainPos, domainLen);
 			byte[] usernameData = getBytes(message, usernamePos, usernameLen);
@@ -453,6 +452,24 @@ public abstract class NTLMMessage
 				username = new String(usernameData, StandardCharsets.US_ASCII);
 				hostname = new String(hostnameData, StandardCharsets.US_ASCII);
 			}
+
+			/* Parse the NTLM response */
+			byte[] ntlmHash = getBytes(ntlmResponse, 0, 16);
+			byte[] signature = getBytes(ntlmResponse, 16, 4);
+			byte[] unused = getBytes(ntlmResponse, 20, 4);
+			byte[] timestamp = getBytes(ntlmResponse, 24, 8);
+
+			if (signature[0] != 1 || signature[1] != 1 || signature[2] != 0 || signature[3] != 0)
+			{
+				throw new Exception("Invalid NTLM2 response");
+			}
+
+			if (unused[0] != 0 || unused[1] != 0 || unused[2] != 0 || unused[3] != 0)
+			{
+				throw new Exception("Invalid NTLM2 response");
+			}
+
+			challenge = getBytes(ntlmResponse, 32, 8);
 		}
 
 		@Override
@@ -489,6 +506,11 @@ public abstract class NTLMMessage
 		public byte[] getNTLMResponse()
 		{
 			return ntlmResponse;
+		}
+
+		public byte[] getChallenge()
+		{
+			return challenge;
 		}
 	}
 
