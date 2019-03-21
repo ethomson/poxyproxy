@@ -123,8 +123,6 @@ public class NTLM
 		assert(username != null && username.length() > 0);
 		assert(password != null && password.length() > 0);
 
-		int targetInfoLen = 0;
-
 		username = username.toUpperCase();
 		domain = domain.toUpperCase();
 
@@ -136,23 +134,13 @@ public class NTLM
 			return false;
 		}
 
-		if ((challenge.getFlags() & NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO) == NTLMMessage.FLAG_NEGOTIATE_TARGET_INFO)
-		{
-			if (challenge.getTargetInformation() == null)
-			{
-				throw new Exception("Invalid NTLM2 challenge: no target information");
-			}
-
-			targetInfoLen = challenge.getTargetInformation().length;
-		}
-
 		// Get the NTLM2 response
 		if (response.getNTLMResponse() == null)
 			throw new Exception("Invalid NTLM response: no NTLM2 response data");
 
 		// The NTLM2 response must be the size of the server's target information
 		// plus 32 bytes of additional response data, plus 16 bytes of hash code
-		if (response.getNTLMResponse().length < targetInfoLen + 48)
+		if (response.getNTLMResponse().length < 48)
 			return false;
 
 		byte[] responseHashData = new byte[16];
