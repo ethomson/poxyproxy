@@ -13,27 +13,30 @@ public class ConsoleLogger extends Logger
 	{
 		this.name = name != null ? name : "(unknown)";
 	}
-	
+
+	@Override
 	public boolean isEnabled(LogLevel level)
 	{
 		if (level == null)
 		{
 			return false;
 		}
-		
+
 		return (level.getValue() <= Logger.level.getValue());
 	}
-	
+
+	@Override
 	public void write(LogLevel level, String message)
 	{
 		write(level, message, null);
 	}
-	
-	public void write(LogLevel level, String message, Exception e)
+
+	@Override
+	public void write(LogLevel level, String message, Throwable t)
 	{
 		if (isEnabled(level))
 		{
-			if (message == null && e == null)
+			if (message == null && t == null)
 			{
 				return;
 			}
@@ -48,16 +51,16 @@ public class ConsoleLogger extends Logger
 			{
 				System.out.print(message);
 			}
-			if (message != null && e != null)
+			if (message != null && t != null)
 			{
 				System.out.print(": ");
-				System.out.print(e.getMessage());
+				System.out.print(t.getMessage());
 			}
 			System.out.print("\n");
 
-			if (e != null)
+			if (t != null)
 			{
-				e.printStackTrace();				
+				t.printStackTrace();
 			}
 		}
 	}

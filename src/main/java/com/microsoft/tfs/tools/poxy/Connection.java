@@ -282,6 +282,10 @@ implements Runnable
 		{
 			logger.write(LogLevel.WARNING, "Unhandled exception on socket " + clientToProxySocket, e);
 		}
+		catch (Throwable t)
+		{
+			logger.write(LogLevel.FATAL, "Unhandled throwable on socket " + clientToProxySocket, t);
+		}
 		finally
 		{
 			IOUtils.close(clientToProxySocket);
