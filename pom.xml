@@ -3,10 +3,10 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.microsoft.tfs.tools.poxy</groupId>
-    <artifactId>com.microsoft.tfs.tools.poxy</artifactId>
+    <groupId>com.edwardthomson.poxyproxy</groupId>
+    <artifactId>com.edwardthomson.poxyproxy</artifactId>
     <version>0.7.0</version>
-    <name>com.microsoft.tfs.tools.poxy</name>
+    <name>com.edwardthomson.poxyproxy</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +45,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.microsoft.tfs.tools.poxy.Poxy</mainClass>
+                            <mainClass>com.edwardthomson.poxyproxy.PoxyProxy</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
